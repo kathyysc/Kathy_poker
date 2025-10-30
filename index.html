@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>德州撲克開局記帳系統</title>
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --income: #f39c12;
+      --light: #ecf0f1;
+      --dark: #34495e;
+      --settled-bg: rgba(255, 255, 255, 0.15);
+      --settled-text: #bdc3c7;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a2a3a, #16222A);
+      color: #ecf0f1;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    h1, h2 {
+      color: #3498db;
+      text-align: center;
+      margin-top: 0;
+    }
+    .section {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #bdc3c7;
+      font-size: 0.9em;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+    }
+    input, select {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ecf0f1;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+    }
+    button {
+      background: #3498db;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #2980b9;
+      transform: translateY(-1px);
+    }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: #c0392b; }
+    button.revert { background: #f39c12; }
+    button.revert:hover { background: #e67e22; }
+    button.income { background: var(--income); }
+    button.income:hover { background: #d35400; }
+    button:disabled {
+      background: #7f8c8d;
+      cursor: not-allowed;
+      transform: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      font-size: 14px;
+    }
+    th {
+      background: var(--primary);
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    tr.settled {
+      background: var(--settled-bg);
+      color: var(--settled-text);
+    }
+    tr.settled td {
+      font-style: italic;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 0.9em;
+    }
+    .card h3 {
+      margin: 0 0 6px 0;
+      color: #3498db;
+      font-size: 1em;
+    }
+    .profit { color: var(--success); font-weight: bold; }
+    .loss { color: var(--danger); font-weight: bold; }
+    .income { color: var(--income); font-weight: bold; }
+    .net { color: #f1c40f; font-weight: bold; }
+    .timestamp {
+      font-size: 0.8em;
+      color: #95a5a6;
+      font-family: monospace;
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+    .actions button {
+      flex: 1;
+      padding: 4px 6px;
+      font-size: 12px;
+    }
+    .compact-input {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+    .compact-input select,
+    .compact-input input {
+      font-size: 14px;
+      padding: 6px 8px;
+    }
+    .compact-input button {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    .item-list {
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding-right: 8px;
+    }
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 0.85em;
+      border-bottom: 1px dashed rgba(255,255,255,0.1);
+    }
+    .item button {
+      font-size: 11px;
+      padding: 1px 6px;
+    }
+    .edit-time {
+      cursor: pointer;
+      color: #3498db;
+      font-weight: bold;
+    }
+    .edit-time:hover {
+      color: #5dade2;
+    }
+    @media (max-width: 768px) {
+      .compact-input {
+        grid-template-columns: 1fr;
+      }
+      .compact-input button {
+        width: 100%;
+      }
+      .actions {
+        flex-direction: column;
+      }
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>德州撲克開局記帳系統</h1>
+
+    <!-- 收入 & 成本 合併輸入 -->
+    <div class="section">
+      <h2>收入 / 成本管理</h2>
+      <div class="compact-input">
+        <div class="form-group">
+          <label>類型</label>
+          <select id="ioType">
+            <option value="income">收入</option>
+            <option value="expense">成本</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>項目名稱</label>
+          <input type="text" id="ioName" placeholder="例如：小費、場租" />
+        </div>
+        <div class="form-group">
+          <label>金額</label>
+          <input type="number" id="ioAmount" placeholder="輸入金額" step="1" />
+        </div>
+        <button onclick="addIO()">新增</button>
+      </div>
+      <div id="ioList" class="item-list"></div>
+    </div>
+
+    <!-- 加入玩家 -->
+    <div class="section">
+      <h2>加入玩家</h2>
+      <div class="form-group">
+        <label for="playerName">玩家名稱</label>
+        <input type="text" id="playerName" placeholder="輸入玩家名稱" />
+      </div>
+      <div class="form-group">
+        <label for="startingChips">起始碼量</label>
+        <input type="number" id="startingChips" placeholder="輸入起始碼量" step="1" />
+      </div>
+      <button onclick="addPlayer()">加入玩家</button>
+    </div>
+
+    <!-- 即時統計 -->
+    <div class="section">
+      <h2>全場即時統計</h2>
+      <div class="summary">
+        <div class="card">
+          <h3>總水上</h3>
+          <p id="totalProfit" class="profit">0</p>
+        </div>
+        <div class="card">
+          <h3>總水下</h3>
+          <p id="totalLoss" class="loss">0</p>
+        </div>
+        <div class="card">
+          <h3>總收入</h3>
+          <p id="totalIncome" class="income">0</p>
+        </div>
+        <div class="card">
+          <h3>總成本</h3>
+          <p id="totalExpense">0</p>
+        </div>
+        <div class="card">
+          <h3>淨利</h3>
+          <p id="netProfit" class="net">0</p>
+        </div>
+        <div class="card">
+          <h3>每分鐘盈利</h3>
+          <p id="perMinProfit" class="profit">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 在場玩家 -->
+    <div class="section">
+      <h2>在場玩家（含已結算）</h2>
+      <table id="activePlayersTable">
+        <thead>
+          <tr>
+            <th>玩家</th>
+            <th>入座 <span class="edit-time" title="點擊編輯">✎</span></th>
+            <th>目前碼量</th>
+            <th>即時盈利</th>
+            <th>加碼紀錄</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- 結算紀錄 -->
+    <div class="section">
+      <h2>結算紀錄</h2>
+      <table id="settledTable">
+        <thead>
+          <tr>
+            <th>玩家</th>
+            <th>入座</th>
+            <th>離場 <span class="edit-time" title="點擊編輯">✎</span></th>
+            <th>在場時間</th>
+            <th>起始</th>
+            <th>加碼</th>
+            <th>離場碼</th>
+            <th>盈虧</th>
+            <th>抽水</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // 時區：GMT+8 (HKT)
+    const TZ_OFFSET = 8 * 60 * 60 * 1000; // +8 小時
+
+    // 轉換為 GMT+8 顯示
+    function toHKT(date) {
+      if (!date) return null;
+      return new Date(date.getTime() + TZ_OFFSET);
+    }
+
+    // 從 HKT 輸入轉為 UTC 儲存
+    function fromHKTInput(str) {
+      const [date, time] = str.split(' ');
+      const [y, m, d] = date.split('-');
+      const [h, min] = time.split(':');
+      const local = new Date(y, m-1, d, h, min);
+      return new Date(local.getTime() - TZ_OFFSET);
+    }
+
+    // 時間格式化 (GMT+8)
+    function formatTime(date = new Date()) {
+      const hkt = toHKT(date);
+      return hkt.toLocaleString('zh-TW', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/\//g, '/');
+    }
+
+    // 格式化輸入提示 (YYYY-MM-DD HH:MM)
+    function formatInputTime(date) {
+      const hkt = toHKT(date);
+      const y = hkt.getFullYear();
+      const m = String(hkt.getMonth() + 1).padStart(2, '0');
+      const d = String(hkt.getDate()).padStart(2, '0');
+      const h = String(hkt.getHours()).padStart(2, '0');
+      const min = String(hkt.getMinutes()).padStart(2, '0');
+      return `${y}-${m}-${d} ${h}:${min}`;
+    }
+
+    // 計算在場分鐘
+    function getMinutesPlayed(player) {
+      if (!player.checkoutTime || !player.joinTime) return 0;
+      return Math.floor((player.checkoutTime - player.joinTime) / 60000);
+    }
+
+    // 計算即時盈利
+    function getLiveProfit(player) {
+      if (!player.endingChips) return null;
+      return player.endingChips - player.startingChips - player.addChipsTotal;
+    }
+
+    // 資料結構
+    let players = [];
+    let ioItems = [];
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      updateAll();
+    });
+
+    // 加入玩家（使用 GMT+8 當下時間）
+    function addPlayer() {
+      const name = document.getElementById('playerName').value.trim();
+      const chips = parseInt(document.getElementById('startingChips').value) || 0;
+
+      if (!name) return alert('請輸入玩家名稱');
+      if (players.some(p => p.name === name)) return alert('玩家名稱已存在');
+
+      players.push({
+        name,
+        joinTime: new Date(), // 儲存為 UTC
+        currentChips: chips,
+        startingChips: chips,
+        addChipsHistory: [],
+        addChipsTotal: 0,
+        endingChips: null,
+        profit: null,
+        checkoutTime: null,
+        isSettled: false
+      });
+
+      document.getElementById('playerName').value = '';
+      document.getElementById('startingChips').value = '';
+      saveData();
+      updateAll();
+    }
+
+    // 快速加碼
+    function promptAddChips(name) {
+      const player = players.find(p => p.name === name);
+      if (player.isSettled) return;
+      const amount = prompt(`為 ${name} 加碼金額：`, '0');
+      if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+        const amt = parseInt(amount);
+        player.currentChips += amt;
+        player.addChipsTotal += amt;
+        player.addChipsHistory.push({ amount: amt, time: new Date() });
+        saveData();
+        updateAll();
+      }
+    }
+
+    // 快速結算
+    function promptCheckout(name) {
+      const player = players.find(p => p.name === name);
+      if (player.isSettled) return;
+      const ending = prompt(`[${name}] 離場碼量：`, player.currentChips);
+      if (ending && !isNaN(ending)) {
+        const endingChips = parseInt(ending);
+        const profit = endingChips - player.startingChips - player.addChipsTotal;
+        player.endingChips = endingChips;
+        player.profit = profit;
+        player.checkoutTime = new Date();
+        player.isSettled = true;
+        saveData();
+        updateAll();
+      }
+    }
+
+    // 編輯時間（輸入為 HKT，儲存為 UTC）
+    function editTime(name, type) {
+      const player = players.find(p => p.name === name);
+      const current = type === 'join' ? player.joinTime : player.checkoutTime;
+      const currentHKT = current ? formatInputTime(current) : '';
+      const input = prompt(`設定 ${type === 'join' ? '入座' : '離場'} 時間 (HKT, YYYY-MM-DD HH:MM):`, currentHKT);
+      if (input && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(input)) {
+        const utcDate = fromHKTInput(input);
+        if (!isNaN(utcDate)) {
+          if (type === 'join') player.joinTime = utcDate;
+          else if (player.isSettled) player.checkoutTime = utcDate;
+          saveData();
+          updateAll();
+        } else {
+          alert('時間轉換失敗');
+        }
+      } else if (input !== null) {
+        alert('請輸入正確格式：YYYY-MM-DD HH:MM');
+      }
+    }
+
+    // 新增收入/成本
+    function addIO() {
+      const type = document.getElementById('ioType').value;
+      const name = document.getElementById('ioName').value.trim() || `未命名${type === 'income' ? '收入' : '成本'}`;
+      const amount = parseInt(document.getElementById('ioAmount').value) || 0;
+      if (amount <= 0) return alert('請輸入有效金額');
+      ioItems.push({ type, name, amount, time: new Date() });
+      document.getElementById('ioName').value = '';
+      document.getElementById('ioAmount').value = '';
+      saveData();
+      updateAll();
+    }
+
+    // 刪除項目
+    function removeIO(index) {
+      ioItems.splice(index, 1);
+      saveData();
+      updateAll();
+    }
+
+    // 返回結算
+    function revertCheckout(name) {
+      if (!confirm(`復原 ${name}？`)) return;
+      const player = players.find(p => p.name === name);
+      if (!player.isSettled) return;
+      player.endingChips = null;
+      player.profit = null;
+      player.checkoutTime = null;
+      player.isSettled = false;
+      saveData();
+      updateAll();
+    }
+
+    // 更新所有
+    function updateAll() {
+      updateActiveTable();
+      updateSettledTable();
+      updateSummary();
+      updateIOList();
+    }
+
+    // 更新在場表格
+    function updateActiveTable() {
+      const tbody = document.querySelector('#activePlayersTable tbody');
+      tbody.innerHTML = '';
+      players.forEach(p => {
+        const history = p.addChipsHistory.map(h => `${h.amount} (${formatTime(h.time)})`).join('<br>') || '無';
+        const liveProfit = p.endingChips !== null ? getLiveProfit(p) : null;
+        const profitText = liveProfit !== null ? 
+          `<span class="${liveProfit > 0 ? 'profit' : liveProfit < 0 ? 'loss' : ''}">${liveProfit > 0 ? '+' : ''}${liveProfit}</span>` : 
+          '—';
+
+        const row = document.createElement('tr');
+        if (p.isSettled) row.classList.add('settled');
+
+        row.innerHTML = `
+          <td>${p.name} ${p.isSettled ? '<small>(已結算)</small>' : ''}</td>
+          <td class="timestamp">
+            <span onclick="editTime('${p.name}', 'join')" class="edit-time" title="編輯入座時間 (HKT)">${formatTime(p.joinTime)}</span>
+          </td>
+          <td>${p.currentChips}</td>
+          <td>${profitText}</td>
+          <td>${history}</td>
+          <td class="actions">
+            ${!p.isSettled ? `<button onclick="promptAddChips('${p.name}')">加碼</button>` : '<button disabled>加碼</button>'}
+            ${!p.isSettled ? `<button onclick="promptCheckout('${p.name}')" class="danger">結算</button>` : `<button onclick="revertCheckout('${p.name}')" class="revert">返回</button>`}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // 更新結算表格
+    function updateSettledTable() {
+      const tbody = document.querySelector('#settledTable tbody');
+      tbody.innerHTML = '';
+
+      const settled = players.filter(p => p.isSettled);
+      const totalMinutes = settled.reduce((sum, p) => sum + getMinutesPlayed(p), 0);
+      const netProfit = parseInt(document.getElementById('netProfit').textContent) || 0;
+      const perMin = totalMinutes > 0 ? netProfit / totalMinutes : 0;
+
+      settled.forEach(p => {
+        const mins = getMinutesPlayed(p);
+        const rake = Math.round(perMin * mins);
+        const profitClass = p.profit > 0 ? 'profit' : p.profit < 0 ? 'loss' : '';
+        const rakeClass = rake > 0 ? 'income' : 'loss';
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${p.name}</td>
+          <td class="timestamp">${formatTime(p.joinTime)}</td>
+          <td class="timestamp">
+            <span onclick="editTime('${p.name}', 'checkout')" class="edit-time" title="編輯離場時間 (HKT)">${formatTime(p.checkoutTime)}</span>
+          </td>
+          <td>${mins} 分</td>
+          <td>${p.startingChips}</td>
+          <td>${p.addChipsTotal}</td>
+          <td>${p.endingChips}</td>
+          <td class="${profitClass}">${p.profit > 0 ? '+' : ''}${p.profit}</td>
+          <td class="${rakeClass}">${rake > 0 ? '+' : ''}${rake}</td>
+          <td><button onclick="revertCheckout('${p.name}')" class="revert">返回</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // 更新統計
+    function updateSummary() {
+      const settled = players.filter(p => p.isSettled);
+      const profit = settled.reduce((s, p) => p.profit > 0 ? s + p.profit : s, 0);
+      const loss = settled.reduce((s, p) => p.profit < 0 ? s + Math.abs(p.profit) : s, 0);
+      const totalIncome = ioItems.filter(i => i.type === 'income').reduce((s, i) => s + i.amount, 0);
+      const totalExpense = ioItems.filter(i => i.type === 'expense').reduce((s, i) => s + i.amount, 0);
+      const net = profit - loss + totalIncome - totalExpense;
+
+      const totalMinutes = settled.reduce((s, p) => s + getMinutesPlayed(p), 0);
+      const perMin = totalMinutes > 0 ? Math.round(net / totalMinutes) : 0;
+
+      document.getElementById('totalProfit').textContent = profit;
+      document.getElementById('totalLoss').textContent = loss;
+      document.getElementById('totalIncome').textContent = totalIncome;
+      document.getElementById('totalExpense').textContent = totalExpense;
+      document.getElementById('netProfit').textContent = net;
+      document.getElementById('netProfit').className = net >= 0 ? 'profit' : 'loss';
+      document.getElementById('perMinProfit').textContent = perMin;
+      document.getElementById('perMinProfit').className = perMin >= 0 ? 'profit' : 'loss';
+    }
+
+    // 更新收入/成本列表
+    function updateIOList() {
+      const container = document.getElementById('ioList');
+      if (ioItems.length === 0) {
+        container.innerHTML = '<p style="color:#95a5a6; font-style:italic; font-size:0.85em;">尚未新增項目</p>';
+        return;
+      }
+      let html = '';
+      ioItems.forEach((item, i) => {
+        const color = item.type === 'income' ? 'var(--income)' : 'var(--danger)';
+        html += `<div class="item">
+          <span style="color:${color}"><strong>${item.name}</strong>: ${item.amount}（${formatTime(item.time)}）</span>
+          <button onclick="removeIO(${i})">刪除</button>
+        </div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // 儲存（UTC）
+    function saveData() {
+      const data = {
+        players: players.map(p => ({
+          ...p,
+          joinTime: p.joinTime.toISOString(),
+          checkoutTime: p.checkoutTime ? p.checkoutTime.toISOString() : null,
+          addChipsHistory: p.addChipsHistory.map(h => ({ ...h, time: h.time.toISOString() }))
+        })),
+        ioItems: ioItems.map(i => ({ ...i, time: i.time.toISOString() }))
+      };
+      localStorage.setItem('pokerLedger', JSON.stringify(data));
+    }
+
+    // 載入（UTC → 顯示 HKT）
+    function loadData() {
+      const saved = localStorage.getItem('pokerLedger');
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      players = (data.players || []).map(p => ({
+        ...p,
+        joinTime: new Date(p.joinTime),
+        checkoutTime: p.checkoutTime ? new Date(p.checkoutTime) : null,
+        addChipsHistory: (p.addChipsHistory || []).map(h => ({ ...h, time: new Date(h.time) }))
+      }));
+      ioItems = (data.ioItems || []).map(i => ({ ...i, time: new Date(i.time) }));
+    }
+
+    // 重置
+    function resetAll() {
+      if (confirm('清空所有資料？')) {
+        players = []; ioItems = [];
+        localStorage.removeItem('pokerLedger');
+        updateAll();
+      }
+    }
+
+    setTimeout(() => {
+      const firstSection = document.querySelector('.section');
+      const resetBtn = document.createElement('button');
+      resetBtn.textContent = '清空所有資料';
+      resetBtn.style.cssText = 'background:#e74c3c; margin-top:12px; width:100%; font-size:13px;';
+      resetBtn.onclick = resetAll;
+      firstSection.appendChild(resetBtn);
+    }, 100);
+  </script>
+</body>
+</html>
